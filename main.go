@@ -85,27 +85,6 @@ func main() {
 
 	// router := http.NewServeMux()
 	router := mux.NewRouter()
-
-	// router.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-	// 	w.Header().Set("Content-Type", "application/json")
-	// 	/*
-	// 		When to use Add and when to use Set in headers
-	// 		Header.Add(key, value string):
-	// 			This method appends the given value to the header associated with the key.
-	// 			If the header key already exists, it adds a new value without removing the existing ones.
-	// 			This is useful when a header can have multiple values, such as Accept or Cache-Control
-	// 		Header.Set(key, value string):
-	// 			This method sets the header associated with the key to the given value.
-	// 			If the header key already exists, it replaces all existing values with the new one.
-	// 			This is suitable for headers that should have only one value, such as Content-Type or Authorization.
-	// 	*/
-	// 	w.WriteHeader(200)
-	// 	resp := &RouterResp{
-	// 		Message: "Namate to you.",
-	// 	}
-
-	// 	json.NewEncoder(w).Encode(resp)
-	// }).Methods("GET")
 	router.Use(loggingMiddleware)
 	router.HandleFunc("/register", app.register).Methods("POST")
 	router.HandleFunc("/login", app.login).Methods("POST")
@@ -165,6 +144,22 @@ func (app *App) jwtMiddleware(next http.Handler) http.Handler {
 
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
+}
+
+func validateMiddleware(schema string) func(http.Handler) http.Handler { // Generally middlewares take a handler and returns handler. In this case a string is taken and handler is returned
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			var body map[string]interface{}
+
+			err := json.NewDecoder(r.Body).Decode(&body)
+
+			if err != nil {
+				respondWithError(w, http.StatusBadRequest, "invalid request payload or json parsing error in validation")
+				return
+			}
+
+		})
+	}
 }
 
 func respondWithError(w http.ResponseWriter, code int, message string) {
